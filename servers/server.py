@@ -1,23 +1,49 @@
-from flask import Flask, jsonify
-import os
+from flask import jsonify, request, make_response
+from app import create_app
+from flask.ext.pymongo import PyMongo
+from utilities import ObjectIdCleaner
+import gridfs
+import pymongo
+
+app = create_app()
+mongo = PyMongo(app)
 
 
-app = Flask(__name__)
-app.config.from_pyfile('config.py')
+@app.before_first_request
+def setBeforeRequestHandlers():
+    mongo.db.add_son_manipulator(ObjectIdCleaner())
 
 
 @app.route('/files')
 def index():
-    """Get all files in a given directory"""
-    uploaded_files = os.listdir(app.config.get('FILE_UPLOAD_FOLDER'))
-    upload_info = []
-    for upload in uploaded_files:
-        upload_item = []
-        upload_item.append(upload)
-        upload_item.append(float(os.path.getsize(os.path.join(
-            app.config.get('FILE_UPLOAD_FOLDER'), upload)))/1024)
-        upload_info.append(upload_item)
-    return jsonify({'uploaded_files': upload_info})
+    """Get files.
+    FIXME: Add pagination."""
+    # fsHandler = GridFS(mongo.db)
+    # files = fsHandler.list()
+    files = [f for f in mongo.db.fs.files.find()]
+    return jsonify({'files': files})
+
+
+@app.route('/static/<ObjectId:id>')
+def get_upload(id):
+    """
+    Return the file
+    """
+    # print repr(mongo.send_file(request.args.get('filename'), base='fs',
+    #                            version=0))
+    fsHandler = gridfs.GridFS(pymongo.MongoClient()[app.config.get(
+        'MONGO_DBNAME')])
+    response = make_response()
+    f = fsHandler.get(id)
+    response.data = f.read()
+    return response
+
+
+@app.route('/upload', methods=['POST'])
+def upload():
+    mongo.save_file(request.files['file'].filename, request.files['file'],
+                    content_type=request.files['file'].mimetype)
+    return make_response()
 
 
 if __name__ == "__main__":

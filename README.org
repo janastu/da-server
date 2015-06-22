@@ -1,1 +1,10 @@
 A small flask app to serve a list of files uploaded on the server.
+
+API
+- Get a list of files uploaded to the server
+- Get data of specific file
+- Upload a file
+
+TODO
+- Edit file meta info
+- Bulk upload

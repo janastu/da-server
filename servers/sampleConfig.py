@@ -2,4 +2,4 @@
 HOST = "localhost"
 DEBUG = True
 PORT = 5000
-FILE_UPLOAD_FOLDER = "/vol/www"
+MONGO_DBNAME = 'test-mongo-audio'
