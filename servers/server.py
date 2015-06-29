@@ -46,7 +46,6 @@ def get_upload(id):
     response = make_response()
     f = fsHandler.get(id)
     response.data = f.read()
-    fsHandler.close()
     return response
 
 
