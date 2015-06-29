@@ -1,6 +1,7 @@
 from flask import jsonify, request, make_response
 from app import create_app
 from flask.ext.pymongo import PyMongo
+from flask.ext.cors import cross_origin
 from utilities import ObjectIdCleaner
 import bson.objectid as oid
 import gridfs
@@ -16,6 +17,7 @@ def set_before_request_handlers():
 
 
 @app.route('/files')
+@cross_origin()
 def index():
     """Get files.
     FIXME: Add pagination."""
@@ -34,6 +36,7 @@ def index():
 
 
 @app.route('/static/<ObjectId:id>')
+@cross_origin()
 def get_upload(id):
     """
     Return the file
@@ -60,6 +63,7 @@ def upload():
 
 
 @app.route('/tags/<ObjectId:id>', methods=['POST'])
+@cross_origin()
 def set_tags(id):
     """Update tags for a given file, create the tags if it is not present.
     id is the file id"""
