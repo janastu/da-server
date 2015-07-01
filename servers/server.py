@@ -3,6 +3,8 @@ from app import create_app
 from flask.ext.pymongo import PyMongo
 from flask.ext.cors import cross_origin
 from utilities import ObjectIdCleaner
+from lxml.html import parse
+from urlnorm import urlnorm
 import bson.objectid as oid
 import gridfs
 import pymongo
@@ -23,7 +25,7 @@ def index():
     FIXME: Add pagination."""
     # fsHandler = GridFS(mongo.db)
     # files = fsHandler.list()
-    files = [f for f in mongo.db.fs.files.find().limit(10)]
+    files = [f for f in mongo.db.urls.find().limit(10)]
     for f in files:
         if mongo.db.tags.find_one({'fileID':
                                    oid.ObjectId(f.get('id'))}) is None:
@@ -78,7 +80,7 @@ def set_tags(id):
 
 @app.route('/user', methods=['GET', 'POST'])
 @cross_origin()
-def checkUser():
+def check_user():
     if request.method == 'GET':
         print repr(request.args)
         user = mongo.db.app_users.find_one_or_404({'phone':
@@ -97,6 +99,25 @@ def checkUser():
         else:
             return jsonify({'status': 'failed',
                             'reason': 'User already exists'})
+
+
+@app.route('/url', methods=['POST'])
+def import_url():
+    content = parse(urlnorm(request.form.get('url'))).getroot()
+    content.make_links_absolute(urlnorm(request.form.get('url')), True)
+    count = 0
+    for link in content.iterlinks():
+        if link[0].tag == 'a' and link[0].getparent().tag == 'td' and link[0].text != 'Parent Directory':
+            mongo.db.urls.save({'url': urlnorm(link[2]),
+                                'uploadDate': link[0].getparent()
+                                .getnext().text.strip()})
+            count += 1
+    if count > 0:
+        return jsonify({'count': count,
+                        'status': 'success'})
+    else:
+        return jsonify({'count': count,
+                        'status': 'error'})
 
 
 if __name__ == "__main__":
