@@ -4,7 +4,7 @@ API
 - Get a list of files uploaded to the server
 - Get data of specific file
 - Upload a file
+- Set tags for a file
+- Check if a user exists on the server or not
 
-TODO
-- Edit file meta info
-- Bulk upload
+scripts/import.py can be used to import files to a database from a directory of choice.
