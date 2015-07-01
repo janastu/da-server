@@ -66,14 +66,38 @@ def upload():
 def set_tags(id):
     """Update tags for a given file, create the tags if it is not present.
     id is the file id"""
-    if mongo.db.tags.find_one({'fileID': id}) is None:
+    print repr(request.form)
+    if mongo.db.tags.find_one({'fileID': id}) is not None:
         mongo.db.tags.update({'fileID': id},
                              {"$set":
-                              {"tags": request.form.get('tags')}})
+                              {"tags": request.form.getlist('tags')}})
     else:
         mongo.db.tags.save({'fileID': id,
-                            'tags': request.form.get('tags')})
+                            'tags': request.form.getlist('tags')})
     return make_response()
+
+
+@app.route('/user', methods=['GET', 'POST'])
+@cross_origin()
+def checkUser():
+    if request.method == 'GET':
+        print repr(request.args)
+        user = mongo.db.app_users.find_one_or_404({'phone':
+                                                   request.args.get('phone'),
+                                                   'passkey':
+                                                   request.args.get('key')})
+        return jsonify({'user': user})
+    else:
+        user = mongo.db.app_users.find_one({'phone':
+                                            request.form.get('phone')})
+        if user is None:
+            mongo.db.app_users.save({'phone':
+                                     request.form.get('phone'),
+                                     'isAdmin': True})
+            return jsonify({'status': 'success'})
+        else:
+            return jsonify({'status': 'failed',
+                            'reason': 'User already exists'})
 
 
 if __name__ == "__main__":
