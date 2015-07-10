@@ -25,7 +25,7 @@ def index():
     FIXME: Add pagination."""
     # fsHandler = GridFS(mongo.db)
     # files = fsHandler.list()
-    files = [f for f in mongo.db.urls.find().limit(10)]
+    files = [f for f in mongo.db.urls.find()]
     for f in files:
         if mongo.db.tags.find_one({'fileID':
                                    oid.ObjectId(f.get('id'))}) is None:
