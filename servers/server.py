@@ -102,6 +102,7 @@ def check_user():
 
 
 @app.route('/url', methods=['POST'])
+@cross_origin()
 def import_url():
     content = parse(urlnorm(request.form.get('url'))).getroot()
     content.make_links_absolute(urlnorm(request.form.get('url')), True)
