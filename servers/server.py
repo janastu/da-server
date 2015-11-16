@@ -10,7 +10,7 @@ import gridfs
 import pymongo
 
 app = create_app()
-CORS(app, allow_headers=('Origin','Content-Type','Authorization'))
+CORS(app, allow_headers=('Origin','Content-Type','Authorization'), allow_credentials='true')
 mongo = PyMongo(app)
 
 
@@ -35,7 +35,7 @@ def index():
             f['tags'] = mongo.db.tags.find_one({'fileID':
                                                 oid.ObjectId(
                                                     f.get('id'))})['tags']
-    return jsonify({'default': files})
+    return jsonify({'files': files})
 
 @app.route('/stn/radioactive')
 @cross_origin()
@@ -53,7 +53,7 @@ def radioactive_index():
             f['tags'] = mongo.db.tags.find_one({'fileID':
                                                 oid.ObjectId(
                                                     f.get('id'))})['tags']
-    return jsonify({'radioactive': files})
+    return jsonify({'files': files})
 
 
 @app.route('/static/<ObjectId:id>')
@@ -87,7 +87,6 @@ def upload():
 def set_tags(id):
     """Update tags for a given file, create the tags if it is not present.
     id is the file id"""
-    print repr(request.form.getlist('tags'))
     if mongo.db.tags.find_one({'fileID': id}) is not None:
         mongo.db.tags.update({'fileID': id},
                              {"$set":
