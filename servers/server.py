@@ -1,7 +1,7 @@
 from flask import jsonify, request, make_response
 from app import create_app
 from flask.ext.pymongo import PyMongo
-from flask.ext.cors import cross_origin
+from flask.ext.cors import cross_origin,CORS
 from utilities import ObjectIdCleaner
 from lxml.html import parse
 from urlnorm import urlnorm
@@ -10,6 +10,7 @@ import gridfs
 import pymongo
 
 app = create_app()
+CORS(app, allow_headers=('Origin','Content-Type','Authorization'))
 mongo = PyMongo(app)
 
 
@@ -25,7 +26,7 @@ def index():
     FIXME: Add pagination."""
     # fsHandler = GridFS(mongo.db)
     # files = fsHandler.list()
-    files = [f for f in mongo.db.urls.find()]
+    files = [f for f in mongo.db.default.find()]
     for f in files:
         if mongo.db.tags.find_one({'fileID':
                                    oid.ObjectId(f.get('id'))}) is None:
@@ -34,7 +35,25 @@ def index():
             f['tags'] = mongo.db.tags.find_one({'fileID':
                                                 oid.ObjectId(
                                                     f.get('id'))})['tags']
-    return jsonify({'files': files})
+    return jsonify({'default': files})
+
+@app.route('/stn/radioactive')
+@cross_origin()
+def radioactive_index():
+    """Get files.
+    FIXME: Add pagination."""
+    # fsHandler = GridFS(mongo.db)
+    # files = fsHandler.list()
+    files = [f for f in mongo.db.radioactive.find()]
+    for f in files:
+        if mongo.db.tags.find_one({'fileID':
+                                   oid.ObjectId(f.get('id'))}) is None:
+            f['tags'] = []
+        else:
+            f['tags'] = mongo.db.tags.find_one({'fileID':
+                                                oid.ObjectId(
+                                                    f.get('id'))})['tags']
+    return jsonify({'radioactive': files})
 
 
 @app.route('/static/<ObjectId:id>')
@@ -68,13 +87,14 @@ def upload():
 def set_tags(id):
     """Update tags for a given file, create the tags if it is not present.
     id is the file id"""
+    print repr(request.form.getlist('tags'))
     if mongo.db.tags.find_one({'fileID': id}) is not None:
         mongo.db.tags.update({'fileID': id},
                              {"$set":
-                              {"tags": request.form.getlist('tags[]')}})
+                              {"tags": request.form.getlist('tags')}})
     else:
         mongo.db.tags.save({'fileID': id,
-                            'tags': request.form.getlist('tags[]')})
+                            'tags': request.form.getlist('tags')})
     return make_response()
 
 
@@ -104,14 +124,21 @@ def check_user():
 @app.route('/url', methods=['POST'])
 @cross_origin()
 def import_url():
+    station_name = request.form.get('station_name')
+    if station_name in mongo.db.collection_names():
+	sname_obj=mongo.db[station_name]
+    else:
+	sname_obj=mongo.db.create_collection(station_name)
+
     content = parse(urlnorm(request.form.get('url'))).getroot()
     content.make_links_absolute(urlnorm(request.form.get('url')), True)
     count = 0
     for link in content.iterlinks():
         if link[0].tag == 'a' and link[0].getparent().tag == 'td' and link[0].text != 'Parent Directory':
-            mongo.db.urls.save({'url': urlnorm(link[2]),
+            sname_obj.save({'url': urlnorm(link[2]),
                                 'uploadDate': link[0].getparent()
-                                .getnext().text.strip()})
+                                .getnext().text.strip(),
+			     'stationName': station_name})
             count += 1
     if count > 0:
         return jsonify({'count': count,
