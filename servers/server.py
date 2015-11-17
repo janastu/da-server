@@ -89,8 +89,8 @@ def set_tags(id):
     id is the file id"""
     if mongo.db.tags.find_one({'fileID': id}) is not None:
         mongo.db.tags.update({'fileID': id},
-                             {"$addToSet":
-                              {"tags": {"$each":request.form.getlist('tags')}}})
+                             {"$set":
+                              {"tags": request.form.getlist('tags')}})
     else:
         mongo.db.tags.save({'fileID': id,
                             'tags': request.form.getlist('tags')})
