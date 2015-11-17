@@ -87,11 +87,10 @@ def upload():
 def set_tags(id):
     """Update tags for a given file, create the tags if it is not present.
     id is the file id"""
-    print repr(request.form.getlist('tags'))
     if mongo.db.tags.find_one({'fileID': id}) is not None:
         mongo.db.tags.update({'fileID': id},
                              {"$addToSet":
-                              {"tags": request.form.getlist('tags')}})
+                              {"tags": {"$each":request.form.getlist('tags')}}})
     else:
         mongo.db.tags.save({'fileID': id,
                             'tags': request.form.getlist('tags')})
