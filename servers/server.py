@@ -18,43 +18,21 @@ mongo = PyMongo(app)
 def set_before_request_handlers():
     mongo.db.add_son_manipulator(ObjectIdCleaner())
 
-
-@app.route('/files')
+@app.route('/stn/<stnid>')
 @cross_origin()
-def index():
+def station_index(stnid):
     """Get files.
     FIXME: Add pagination."""
-    # fsHandler = GridFS(mongo.db)
-    # files = fsHandler.list()
-    files = [f for f in mongo.db.default.find()]
+    files = [f for f in mongo.db[stnid].find()]
     for f in files:
         if mongo.db.tags.find_one({'fileID':
-                                   oid.ObjectId(f.get('id'))}) is None:
-            f['tags'] = []
+                            	  oid.ObjectId(f.get('id'))}) is None:
+      	    f['tags'] = []
         else:
             f['tags'] = mongo.db.tags.find_one({'fileID':
-                                                oid.ObjectId(
+                                               oid.ObjectId(
                                                     f.get('id'))})['tags']
     return jsonify({'files': files})
-
-@app.route('/stn/radioactive')
-@cross_origin()
-def radioactive_index():
-    """Get files.
-    FIXME: Add pagination."""
-    # fsHandler = GridFS(mongo.db)
-    # files = fsHandler.list()
-    files = [f for f in mongo.db.radioactive.find()]
-    for f in files:
-        if mongo.db.tags.find_one({'fileID':
-                                   oid.ObjectId(f.get('id'))}) is None:
-            f['tags'] = []
-        else:
-            f['tags'] = mongo.db.tags.find_one({'fileID':
-                                                oid.ObjectId(
-                                                    f.get('id'))})['tags']
-    return jsonify({'files': files})
-
 
 @app.route('/static/<ObjectId:id>')
 @cross_origin()
@@ -124,6 +102,7 @@ def check_user():
 @cross_origin()
 def import_url():
     station_name = request.form.get('station_name')
+    print repr("station name:"+station_name)
     if station_name in mongo.db.collection_names():
 	sname_obj=mongo.db[station_name]
     else:
